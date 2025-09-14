@@ -9,7 +9,6 @@ A standalone semantic search library with Azure OpenAI integration, featuring in
 - **💾 SQLite Storage**: Persistent vector database with efficient retrieval
 - **📁 Smart Indexing**: Automatic file discovery, summarization, and embedding
 - **🔍 Semantic Search**: Intent-aware search beyond keyword matching
-- **🎨 Beautiful CLI**: Colorful, intuitive command-line interface
 - **🔐 Flexible Auth**: API key or Azure AD authentication
 - **🤖 MCP Server**: Model Context Protocol integration for AI assistants
 - **⚡ Performance Optimized**: sqlite-vec integration for fast vector search
