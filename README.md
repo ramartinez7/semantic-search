@@ -329,9 +329,11 @@ src/
 ## 📝 Notes
 
 - Embeddings are normalized Float32 arrays stored as SQLite BLOBs
-- Uses brute-force cosine similarity for vector search
-- Summaries are regenerated when file content changes
+- Uses sqlite-vec extension for optimized vector search with brute-force fallback
+- Files are only reprocessed if not found in database (no automatic change detection)
+- Use `--force` flag to reprocess all files regardless of database state
 - WAL mode enabled for better SQLite performance
+- Dual storage: main `files` table + virtual `vec_files` table for vector operations
 - Supports text files with automatic MIME type detection
 
 ## 📝 License
