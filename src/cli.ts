@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('semsearch')
   .description('🔍 Standalone semantic search CLI with Azure OpenAI integration')
-  .version('0.3.2')
+  .version('0.4.0')
   .addHelpText('after', `
 Examples:
   $ semsearch init                              # Setup wizard (first time)
