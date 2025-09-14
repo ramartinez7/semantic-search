@@ -12,7 +12,7 @@ export type FileRecord = {
   id: string;
   metadata: FileMetadata;
   summary: string;
-  embedding: number[];
+  embedding?: number[]; // Optional - only populated during indexing, empty when retrieving
 };
 
 export type AzureConfig = {
