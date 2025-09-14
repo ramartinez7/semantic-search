@@ -99,8 +99,20 @@ export class InitWizard {
         validate: (input: string) => {
           if (!input) return 'Endpoint URL is required';
           if (!input.startsWith('https://')) return 'URL must start with https://';
-          if (!input.includes('openai.azure.com')) return 'Must be an Azure OpenAI endpoint';
-          return true;
+          let hostname: string;
+          try {
+            hostname = new URL(input).hostname;
+          } catch {
+            return 'Invalid URL format';
+          }
+          // Accept openai.azure.com or subdomains thereof
+          if (
+            hostname === 'openai.azure.com' ||
+            hostname.endsWith('.openai.azure.com')
+          ) {
+            return true;
+          }
+          return 'Must be an Azure OpenAI endpoint (host must be openai.azure.com or subdomain thereof)';
         }
       }
     ]);
