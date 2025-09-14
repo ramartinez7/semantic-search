@@ -5,7 +5,7 @@
 Your SemanticSearch library now has comprehensive quality gates to prevent broken code from being merged:
 
 ### ⚡ **GitHub Actions CI** (Pull Requests)
-- **Multi-Node Testing** - Tests on Node.js 18.x and 20.x
+- **Node.js LTS Testing** - Tests on Node.js 20.x (current LTS)
 - **Cross-Platform** - Runs on both Ubuntu and Windows
 - **Complete Quality Checks** - Type checking, building, and smoke tests
 - **Automatic Blocking** - PRs fail if any check fails
@@ -32,7 +32,7 @@ git push origin main
 ### 2. **Enable Branch Protection** (GitHub UI)
 Go to your repository settings → Branches → Add protection rule for `main`:
 - ✅ Require status checks to pass before merging
-- ✅ Require CI checks: `build (18.x)`, `build (20.x)`, `build-windows`
+- ✅ Require CI checks: `build (20.x)`, `build-windows`
 - ✅ Require up-to-date branches before merging
 - ✅ Restrict pushes to matching branches
 

@@ -35,7 +35,7 @@ npm run lint
 ## Automated Checks
 
 GitHub Actions will automatically run these checks on all PRs:
-- Build on Node.js 18.x and 20.x
+- Build on Node.js 20.x (LTS)
 - Build on both Ubuntu and Windows
 - TypeScript compilation
 - Type checking
