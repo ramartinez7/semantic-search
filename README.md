@@ -4,7 +4,7 @@ A standalone file semantic search library with Azure OpenAI integration, featuri
 
 ## ✨ Features
 
-- **🎯 Setup Wizard**: Interactive guided setup with beautiful CLI interface
+- **🎯 Setup Wizard**: Interactive guided setup with rich terminal interface
 - **🧠 Azure OpenAI Integration**: Text embeddings + GPT-4 reranking
 - **💾 SQLite Storage**: Persistent vector database with efficient retrieval
 - **📁 Smart File Indexing**: Automatic file discovery, summarization, and embedding
@@ -312,7 +312,7 @@ npm run build
 ```
 src/
 ├── cli.ts                  # Command-line interface with all commands
-├── init-wizard.ts          # Setup wizard with beautiful UX
+├── init-wizard.ts          # Setup wizard with interactive UX
 ├── store.ts                # Main SemanticStore class
 ├── azure.ts                # Azure OpenAI client management
 ├── sqlite.ts               # SQLite vector database with sqlite-vec
