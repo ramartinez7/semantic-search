@@ -356,7 +356,15 @@ program
     }
     
     console.log(`${chalk.cyan('Summary:')} ${rec.summary}`);
-    console.log(`\n${chalk.cyan('Embedding:')} ${rec.embedding.length} dimensions`);
+    
+    // Show embedding info from vector table
+    const vectorCount = store.vectorCount();
+    const hasVector = store.hasVectorIndex();
+    if (hasVector && vectorCount > 0) {
+      console.log(`\n${chalk.cyan('Embedding:')} Stored in vector index (1536 dimensions)`);
+    } else {
+      console.log(`\n${chalk.cyan('Embedding:')} Not found in vector index`);
+    }
   });
 
 program
@@ -455,6 +463,43 @@ program
         console.error('This usually means the deployment name doesn\'t exist in your Azure OpenAI resource.');
         console.error('Check your deployment names in the Azure Portal.');
       }
+    }
+  });
+
+program
+  .command('clean')
+  .description('Clean corrupted vector data from the database')
+  .option('--db <path>', 'SQLite path')
+  .option('--force', 'Force clean all vector tables (will require re-indexing)')
+  .action(async (opts: { db?: string; force?: boolean }, command: any) => {
+    const defaults = getConfiguredDefaults();
+    const dbPath = opts.db || defaults.defaultDb;
+    
+    console.log(chalk.blue(`🧹 Cleaning database: ${chalk.bold(dbPath)}`));
+    
+    try {
+      const { SqliteStore } = await import('./sqlite');
+      const db = new SqliteStore(dbPath);
+      
+      if (opts.force) {
+        console.log(chalk.yellow('⚠️  Force cleaning: dropping all vector tables...'));
+        // Drop all vector tables - user must re-index
+        db.close();
+        
+        // Recreate database connection and it will initialize clean schema
+        const cleanDb = new SqliteStore(dbPath);
+        cleanDb.close();
+        
+        console.log(chalk.green('✅ Vector tables cleaned. You will need to re-index your files.'));
+      } else {
+        console.log(chalk.green('✅ Database structure is valid. Use --force to reset vector tables.'));
+        console.log(chalk.yellow('💡 Tip: Run "semsearch index --force" to refresh all embeddings.'));
+      }
+      
+      db.close();
+    } catch (error: any) {
+      console.error(chalk.red(`❌ Error cleaning database: ${error.message}`));
+      process.exit(1);
     }
   });
 

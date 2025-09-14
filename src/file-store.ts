@@ -61,6 +61,10 @@ export class FileStore {
     const results: Array<{ rec: FileRecord; score: number }> = [];
     
     for (const rec of Object.values(records)) {
+      // Skip records without embeddings
+      if (!rec.embedding || rec.embedding.length === 0) {
+        continue;
+      }
       const score = cosine(queryEmbedding, rec.embedding);
       results.push({ rec, score });
     }

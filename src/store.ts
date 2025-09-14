@@ -179,6 +179,14 @@ export class SemanticStore {
     return this.db.count();
   }
 
+  vectorCount(): number {
+    return this.db.vectorCount();
+  }
+
+  hasVectorIndex(): boolean {
+    return this.db.hasVectorIndex();
+  }
+
   // Additional methods for MCP server support
   async getFileById(id: string): Promise<FileRecord | null> {
     return this.db.getById(id);

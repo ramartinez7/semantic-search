@@ -23,6 +23,10 @@ export class MockStore {
   retrieveByEmbedding(queryEmbedding: number[], topK: number): Array<{ rec: FileRecord; score: number }> {
     const results: Array<{ rec: FileRecord; score: number }> = [];
     for (const rec of this.records.values()) {
+      // Skip records without embeddings
+      if (!rec.embedding || rec.embedding.length === 0) {
+        continue;
+      }
       const score = cosine(queryEmbedding, rec.embedding);
       results.push({ rec, score });
     }
