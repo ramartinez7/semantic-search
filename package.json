@@ -1,8 +1,7 @@
 {
-  "name": "semantic-search",
+  "name": "semsearch",
   "version": "0.1.0",
-  "private": true,
-  "description": "Standalone Semantic Search Library — Node.js + Azure OpenAI + Azure Identity + SQLite",
+  "description": "🔍 AI-powered semantic search library with Azure OpenAI embeddings, intelligent reranking, and local SQLite storage. Find documents by meaning, not just keywords.",
   "main": "dist/index.js",
   "bin": {
     "semsearch": "dist/cli.js"
@@ -22,8 +21,21 @@
     "openai",
     "sqlite"
   ],
-  "author": "",
+  "author": "rmartinez",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rmartinez/semantic-search.git"
+  },
+  "homepage": "https://github.com/rmartinez/semantic-search#readme",
+  "bugs": {
+    "url": "https://github.com/rmartinez/semantic-search/issues"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@azure/identity": "^4.5.0",
     "@azure/openai": "^2.0.0",
