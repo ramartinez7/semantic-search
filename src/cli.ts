@@ -467,49 +467,6 @@ program
   });
 
 program
-  .command('clean')
-  .description('Clean corrupted vector data from the database')
-  .option('--db <path>', 'SQLite path')
-  .option('--force', 'Force clean all vector tables (will require re-indexing)')
-  .action(async (opts: { db?: string; force?: boolean }, command: any) => {
-    const defaults = getConfiguredDefaults();
-    const dbPath = opts.db || defaults.defaultDb;
-    
-    console.log(chalk.blue(`🧹 Cleaning database: ${chalk.bold(dbPath)}`));
-    
-    try {
-      const { SqliteStore } = await import('./sqlite');
-      const db = new SqliteStore(dbPath);
-      
-      if (opts.force) {
-        console.log(chalk.yellow('⚠️  Force cleaning: dropping all vector tables...'));
-        // Drop all vector tables - user must re-index
-        // Find all vector tables and drop them
-        const vectorTableRows = await db.db.all(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'vector_%';"
-        );
-        if (vectorTableRows.length === 0) {
-          console.log(chalk.gray('No vector tables found to drop.'));
-        } else {
-          for (const row of vectorTableRows) {
-            await db.db.run(`DROP TABLE IF EXISTS ${row.name};`);
-            console.log(chalk.gray(`Dropped table: ${row.name}`));
-          }
-          console.log(chalk.green('✅ Vector tables cleaned. You will need to re-index your files.'));
-        }
-      } else {
-        console.log(chalk.green('✅ Database structure is valid. Use --force to reset vector tables.'));
-        console.log(chalk.yellow('💡 Tip: Run "semsearch index --force" to refresh all embeddings.'));
-      }
-      
-      db.close();
-    } catch (error: any) {
-      console.error(chalk.red(`❌ Error cleaning database: ${error.message}`));
-      process.exit(1);
-    }
-  });
-
-program
   .command('mcp')
   .description('Start MCP (Model Context Protocol) server for AI assistant integration')
   .option('--db <path>', 'SQLite database path')
