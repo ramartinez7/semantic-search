@@ -484,13 +484,19 @@ program
       if (opts.force) {
         console.log(chalk.yellow('⚠️  Force cleaning: dropping all vector tables...'));
         // Drop all vector tables - user must re-index
-        db.close();
-        
-        // Recreate database connection and it will initialize clean schema
-        const cleanDb = new SqliteStore(dbPath);
-        cleanDb.close();
-        
-        console.log(chalk.green('✅ Vector tables cleaned. You will need to re-index your files.'));
+        // Find all vector tables and drop them
+        const vectorTableRows = await db.db.all(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'vector_%';"
+        );
+        if (vectorTableRows.length === 0) {
+          console.log(chalk.gray('No vector tables found to drop.'));
+        } else {
+          for (const row of vectorTableRows) {
+            await db.db.run(`DROP TABLE IF EXISTS ${row.name};`);
+            console.log(chalk.gray(`Dropped table: ${row.name}`));
+          }
+          console.log(chalk.green('✅ Vector tables cleaned. You will need to re-index your files.'));
+        }
       } else {
         console.log(chalk.green('✅ Database structure is valid. Use --force to reset vector tables.'));
         console.log(chalk.yellow('💡 Tip: Run "semsearch index --force" to refresh all embeddings.'));
