@@ -190,7 +190,7 @@ export class SqliteStore {
         modifiedAt: row.modifiedAt || undefined,
       },
       summary: row.summary,
-      // No embedding field - embeddings are managed by sqlite-vec separately
+      embedding: row.embedding !== undefined ? row.embedding : undefined,
     };
   }
 
