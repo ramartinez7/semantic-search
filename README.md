@@ -1,14 +1,14 @@
-# 🔍 Semantic Search Library
+# 🔍 File Semantic Search Library
 
-A standalone semantic search library with Azure OpenAI integration, featuring intelligent indexing, vector similarity search, and AI-powered reranking.
+A standalone file semantic search library with Azure OpenAI integration, featuring intelligent file indexing, vector similarity search, and AI-powered reranking.
 
 ## ✨ Features
 
 - **🎯 Setup Wizard**: Interactive guided setup with beautiful CLI interface
 - **🧠 Azure OpenAI Integration**: Text embeddings + GPT-4 reranking
 - **💾 SQLite Storage**: Persistent vector database with efficient retrieval
-- **📁 Smart Indexing**: Automatic file discovery, summarization, and embedding
-- **🔍 Semantic Search**: Intent-aware search beyond keyword matching
+- **📁 Smart File Indexing**: Automatic file discovery, summarization, and embedding
+- **🔍 File Semantic Search**: Intent-aware search beyond keyword matching across your documents
 - **🔐 Flexible Auth**: API key or Azure AD authentication
 - **🤖 MCP Server**: Model Context Protocol integration for AI assistants
 - **⚡ Performance Optimized**: sqlite-vec integration for fast vector search
@@ -28,12 +28,12 @@ The setup wizard will guide you through:
 - Database location setup
 - Connection testing
 
-### 2. Index Your Documents
+### 2. Index Your Document Files
 ```bash
 npx semsearch index ./my-documents
 ```
 
-### 3. Search Your Content
+### 3. Search Your Files
 ```bash
 npx semsearch search "machine learning algorithms"
 ```
@@ -45,7 +45,7 @@ npx semsearch search "machine learning algorithms"
 | `init` | Run setup wizard (first time) |
 | `status` | Show configuration and database status |
 | `index <path>` | Index files for search |
-| `search <query>` | Search indexed content |
+| `search <query>` | Search indexed files |
 | `info <id>` | Get detailed file information |
 | `reset` | Reset configuration and/or database |
 | `prompts` | Manage AI prompts for summarization and reranking |
@@ -131,13 +131,13 @@ npx semsearch-mcp
 This starts a JSON-RPC server using stdio transport that provides:
 
 #### 🛠️ Tools
-- **`search`**: Perform semantic search across indexed documents
+- **`search`**: Perform semantic search across indexed files
   - Parameters: `query` (string), `topK` (number, default: 5), `minScore` (number, default: 0)
-- **`get_stats`**: Get database statistics (document count, size, etc.)
+- **`get_stats`**: Get database statistics (file count, size, etc.)
 
 #### 📚 Resources  
-- **`file://<id>`**: Access individual indexed documents by their UUID
-- Dynamic resource list based on your indexed content
+- **`file://<id>`**: Access individual indexed files by their UUID
+- Dynamic resource list based on your indexed files
 
 #### AI Assistant Integration
 Configure your AI assistant (Claude Desktop, VS Code Copilot, etc.) to connect to the MCP server:
@@ -157,7 +157,7 @@ Configure your AI assistant (Claude Desktop, VS Code Copilot, etc.) to connect t
 **Note**: The MCP server automatically uses your configured database and settings from the default locations. No environment variables needed!
 
 The AI assistant can then:
-- Search your documents semantically
+- Search your files semantically
 - Retrieve specific files by ID
 - Get database statistics
 - Access your knowledge base contextually
@@ -296,7 +296,7 @@ const store = new SemanticStore({
   summarizer: { maxChars: 50000 }
 });
 
-await store.indexPath('./docs');
+await store.indexPath('./docs');  // Index all files in ./docs directory
 const results = await store.search('How to configure X?', { topK: 10 });
 ```
 
