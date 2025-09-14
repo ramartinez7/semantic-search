@@ -178,4 +178,56 @@ export class SemanticStore {
   count(): number {
     return this.db.count();
   }
+
+  // Additional methods for MCP server support
+  async getFileById(id: string): Promise<FileRecord | null> {
+    return this.db.getById(id);
+  }
+
+  async listFiles(limit?: number): Promise<FileRecord[]> {
+    const allFiles = this.db.listAll();
+    return limit ? allFiles.slice(0, limit) : allFiles;
+  }
+
+  async getStats(): Promise<{
+    totalDocuments: number;
+    vectorIndexCoverage: number;
+    databaseSize: string;
+    lastModified: string;
+    azureConfig: {
+      endpoint: string;
+      authMethod: string;
+      embeddingDeployment: string;
+      rerankDeployment: string;
+    };
+  }> {
+    const totalDocuments = this.db.count();
+    const vectorCount = this.db.vectorCount();
+    const hasVectorIndex = this.db.hasVectorIndex();
+    const vectorIndexCoverage = totalDocuments > 0 ? Math.round((vectorCount / totalDocuments) * 100) : 0;
+
+    // Get database file stats
+    let databaseSize = 'Unknown';
+    let lastModified = 'Unknown';
+    try {
+      const stats = fs.statSync(this.config.sqlite.path);
+      databaseSize = `${(stats.size / 1024).toFixed(1)} KB`;
+      lastModified = stats.mtime.toISOString();
+    } catch (error) {
+      // File might not exist yet
+    }
+
+    return {
+      totalDocuments,
+      vectorIndexCoverage,
+      databaseSize,
+      lastModified,
+      azureConfig: {
+        endpoint: this.config.azure.endpoint,
+        authMethod: this.config.apiKey ? 'API Key' : 'Azure AD',
+        embeddingDeployment: this.config.azure.embeddingDeployment,
+        rerankDeployment: this.config.azure.rerankDeployment
+      }
+    };
+  }
 }

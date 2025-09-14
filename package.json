@@ -1,10 +1,11 @@
 {
   "name": "semsearch",
-  "version": "0.2.0",
+  "version": "0.3.2",
   "description": "🔍 AI-powered semantic search library with Azure OpenAI embeddings, intelligent reranking, and local SQLite storage. Find documents by meaning, not just keywords.",
   "main": "dist/index.js",
   "bin": {
-    "semsearch": "dist/cli.js"
+    "semsearch": "dist/cli.js",
+    "semsearch-mcp": "dist/mcp-server-simple.js"
   },
   "scripts": {
     "build": "tsc -p .",
@@ -12,7 +13,8 @@
     "prepare": "npm run build",
     "lint": "eslint 'src/**/*.ts'",
     "smoke": "node dist/smoke.js",
-    "test": "node dist/test.js"
+    "test": "node dist/test.js",
+    "mcp": "node dist/mcp-server-simple.js"
   },
   "keywords": [
     "semantic",
@@ -39,6 +41,7 @@
   "dependencies": {
     "@azure/identity": "^4.5.0",
     "@azure/openai": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.18.0",
     "@types/inquirer": "^9.0.9",
     "better-sqlite3": "^9.6.0",
     "boxen": "^8.0.1",
@@ -51,7 +54,8 @@
     "openai": "^4.57.0",
     "ora": "^8.2.0",
     "sqlite-vec": "^0.1.7-alpha.2",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "zod": "^3.25.76"
   },
   "engines": {
     "node": ">=18"

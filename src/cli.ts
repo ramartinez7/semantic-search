@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('semsearch')
   .description('🔍 Standalone semantic search CLI with Azure OpenAI integration')
-  .version('0.2.0')
+  .version('0.3.2')
   .addHelpText('after', `
 Examples:
   $ semsearch init                              # Setup wizard (first time)
@@ -456,6 +456,35 @@ program
         console.error('Check your deployment names in the Azure Portal.');
       }
     }
+  });
+
+program
+  .command('mcp')
+  .description('Start MCP (Model Context Protocol) server for AI assistant integration')
+  .option('--db <path>', 'SQLite database path')
+  .action(async (opts: { db?: string }) => {
+    const defaults = getConfiguredDefaults();
+    const dbPath = opts.db || defaults.defaultDb;
+    
+    console.log(chalk.blue.bold('🔌 Starting MCP Server...\n'));
+    console.log(chalk.gray(`Database: ${dbPath}`));
+    console.log(chalk.gray(`Endpoint: ${defaults.endpoint}`));
+    console.log(chalk.gray(`Auth: ${defaults.apiKey ? 'API Key' : 'Azure AD'}`));
+    console.log(chalk.gray('Protocol: stdio (for AI assistant integration)\n'));
+    
+    // Set environment variables for the MCP server
+    if (!process.env.AZURE_OPENAI_ENDPOINT) process.env.AZURE_OPENAI_ENDPOINT = defaults.endpoint;
+    if (!process.env.AZURE_OPENAI_API_KEY && defaults.apiKey) process.env.AZURE_OPENAI_API_KEY = defaults.apiKey;
+    if (!process.env.AZURE_OPENAI_EMBED_DEPLOYMENT) process.env.AZURE_OPENAI_EMBED_DEPLOYMENT = defaults.embeddingDeployment;
+    if (!process.env.AZURE_OPENAI_RERANK_DEPLOYMENT) process.env.AZURE_OPENAI_RERANK_DEPLOYMENT = defaults.rerankDeployment;
+    if (!process.env.SEMSEARCH_DEFAULT_DB) process.env.SEMSEARCH_DEFAULT_DB = dbPath;
+    
+    console.log(chalk.green('✅ MCP Server ready for AI assistant connections'));
+    console.log(chalk.gray('Configure your AI assistant to connect to this server via stdio transport'));
+    
+    // Import and start the MCP server
+    const { default: startMcpServer } = await import('./mcp-server-simple.js');
+    await startMcpServer();
   });
 
 program.parseAsync(process.argv);
