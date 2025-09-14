@@ -68,6 +68,7 @@ function makeStore(dbPath: string, maxChars: number, cliOptions: any = {}) {
   return new SemanticStore({
     azure: { endpoint, embeddingDeployment, rerankDeployment },
     credential: apiKey ? undefined : new DefaultAzureCredential(), // Use AAD if no API key
+    apiKey: apiKey, // Pass the API key through
     sqlite: { path: dbPath },
     summarizer: { maxChars },
   });

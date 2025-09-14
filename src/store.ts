@@ -12,7 +12,7 @@ import { IndexingProgressManager, ProgressCallbacks } from './indexing-progress'
 import { DEFAULT_CONFIG } from './constants';
 
 export class SemanticStore {
-  private azure = createAzureClients(this.config.azure, this.config.credential);
+  private azure = createAzureClients(this.config.azure, this.config.credential, this.config.apiKey);
   private db = new SqliteStore(this.config.sqlite.path);
 
   constructor(private config: StoreConfig) {}

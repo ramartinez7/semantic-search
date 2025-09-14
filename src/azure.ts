@@ -8,15 +8,16 @@ export type AzureClients = {
   rerankDeployment: string;
 };
 
-export function createAzureClients(cfg: AzureConfig, credential?: DefaultAzureCredential | any): AzureClients {
-  const apiKey = process.env.AZURE_OPENAI_API_KEY;
+export function createAzureClients(cfg: AzureConfig, credential?: DefaultAzureCredential | any, apiKey?: string): AzureClients {
+  const envApiKey = process.env.AZURE_OPENAI_API_KEY;
+  const finalApiKey = apiKey || envApiKey;
   const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-01';
 
   let client: AzureOpenAI;
-  if (apiKey) {
+  if (finalApiKey) {
     console.log(`Using Azure OpenAI with API key authentication`);
     client = new AzureOpenAI({
-      apiKey,
+      apiKey: finalApiKey,
       endpoint: cfg.endpoint,
       apiVersion,
     });

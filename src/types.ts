@@ -24,6 +24,7 @@ export type AzureConfig = {
 export type StoreConfig = {
   azure: AzureConfig;
   credential?: any; // DefaultAzureCredential or similar
+  apiKey?: string; // Azure OpenAI API key
   sqlite: { path: string };
   summarizer: { maxChars: number };
 };
