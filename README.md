@@ -260,12 +260,12 @@ Found 1 result:
 
 ## 🔐 Authentication Options
 
-### API Key (Recommended for Development)
+### API Key
 - Simple setup through init wizard
 - Stored securely in `.env` file
 - Immediate access without additional configuration
 
-### Azure AD (Recommended for Production)
+### Azure AD
 - Uses DefaultAzureCredential
 - Supports managed identities
 - Enhanced security for enterprise environments
