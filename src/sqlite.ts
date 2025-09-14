@@ -4,14 +4,20 @@ import mime from 'mime-types';
 import path from 'path';
 import { FileMetadata, FileRecord } from './types';
 import { fromFloat32Blob, toFloat32Blob, cosine } from './utils';
+import * as sqliteVec from 'sqlite-vec';
 
 export class SqliteStore {
   private db: Database.Database;
+  private vectorTableReady = false;
 
   constructor(public filePath: string) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     this.db = new Database(filePath);
     this.db.pragma('journal_mode = WAL');
+    
+    // Load sqlite-vec extension
+    this.db.loadExtension(sqliteVec.getLoadablePath());
+    
     this.migrate();
   }
 
@@ -31,10 +37,38 @@ export class SqliteStore {
       CREATE INDEX IF NOT EXISTS idx_files_path ON files(path);
       CREATE INDEX IF NOT EXISTS idx_files_filename ON files(filename);
     `);
+
+    // Note: Vector table will be created dynamically when first embedding is inserted
+  }
+
+  private ensureVectorTable(embeddingDimension: number) {
+    if (this.vectorTableReady) return;
+    
+    try {
+      // Drop existing table if dimensions don't match
+      this.db.exec('DROP TABLE IF EXISTS vec_files');
+      
+      // Create virtual vector table with correct dimensions
+      this.db.exec(`
+        CREATE VIRTUAL TABLE vec_files USING vec0(
+          id TEXT PRIMARY KEY,
+          embedding float[${embeddingDimension}]
+        );
+      `);
+      
+      this.vectorTableReady = true;
+    } catch (error) {
+      console.warn('Failed to create vector table:', error);
+    }
   }
 
   upsert(record: FileRecord) {
     const { id, metadata, summary, embedding } = record;
+    
+    // Ensure vector table exists with correct dimensions
+    this.ensureVectorTable(embedding.length);
+    
+    // Insert/update main table
     const stmt = this.db.prepare(`
       INSERT INTO files (id, path, filename, mimetype, size, createdAt, modifiedAt, summary, embedding)
       VALUES (@id, @path, @filename, @mimetype, @size, @createdAt, @modifiedAt, @summary, @embedding)
@@ -59,6 +93,18 @@ export class SqliteStore {
       summary,
       embedding: toFloat32Blob(record.embedding),
     });
+
+    // Handle vector table separately (delete + insert since UPSERT not supported)
+    try {
+      const deleteVecStmt = this.db.prepare('DELETE FROM vec_files WHERE id = ?');
+      deleteVecStmt.run(id);
+      
+      const insertVecStmt = this.db.prepare('INSERT INTO vec_files (id, embedding) VALUES (?, ?)');
+      insertVecStmt.run(id, JSON.stringify(embedding));
+    } catch (error) {
+      console.warn('Failed to update vector table for', id, ':', error);
+      // Continue even if vector table update fails
+    }
   }
 
   getById(id: string): FileRecord | null {
@@ -83,8 +129,61 @@ export class SqliteStore {
     return result.count;
   }
 
-  // Brute-force vector retrieval; returns [record, dotProduct]
+  vectorCount(): number {
+    try {
+      const result = this.db.prepare('SELECT COUNT(*) as count FROM vec_files').get() as any;
+      return result.count;
+    } catch {
+      return 0;
+    }
+  }
+
+  hasVectorIndex(): boolean {
+    try {
+      this.db.prepare('SELECT COUNT(*) FROM vec_files LIMIT 1').get();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Vector-based retrieval using sqlite-vec; returns [record, similarity]
   retrieveByEmbedding(queryEmbedding: number[], topK: number): Array<{ rec: FileRecord; score: number }> {
+    try {
+      // Use sqlite-vec for efficient vector search
+      const vecQuery = this.db.prepare(`
+        SELECT 
+          id, 
+          distance
+        FROM vec_files 
+        WHERE embedding MATCH ? 
+        ORDER BY distance 
+        LIMIT ?
+      `);
+      
+      const vecResults = vecQuery.all(JSON.stringify(queryEmbedding), topK) as Array<{ id: string; distance: number }>;
+      
+      // Convert distance to similarity score (cosine distance -> cosine similarity)
+      const results: Array<{ rec: FileRecord; score: number }> = [];
+      for (const vecResult of vecResults) {
+        const fileRecord = this.getById(vecResult.id);
+        if (fileRecord) {
+          // sqlite-vec returns distance, convert to similarity
+          const similarity = 1 - vecResult.distance;
+          results.push({ rec: fileRecord, score: similarity });
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.warn('Vector search failed, falling back to brute-force:', error);
+      // Fallback to brute-force if vector search fails
+      return this.retrieveByEmbeddingBruteForce(queryEmbedding, topK);
+    }
+  }
+
+  // Keep the old brute-force method as fallback
+  private retrieveByEmbeddingBruteForce(queryEmbedding: number[], topK: number): Array<{ rec: FileRecord; score: number }> {
     const rows = this.db.prepare('SELECT id, summary, embedding, path, filename, mimetype, size, createdAt, modifiedAt FROM files').all() as any[];
     const results: Array<{ rec: FileRecord; score: number }> = [];
     for (const r of rows) {

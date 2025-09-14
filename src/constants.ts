@@ -11,6 +11,10 @@ export const DEFAULT_CONFIG = {
   CANDIDATE_MULTIPLIER: 3, // Retrieve 3x topK candidates for reranking
   MIN_CANDIDATES: 10,
   
+  // Similarity thresholds
+  DEFAULT_MIN_SIMILARITY: 0.1, // Minimum cosine similarity to include results (0.0-1.0)
+  DEFAULT_MIN_SCORE: 0, // Minimum final score to include results (0-100)
+  
   // Test database
   TEST_DB_PATH: './.data/test.db',
   TEST_MAX_CHARS: 1000,

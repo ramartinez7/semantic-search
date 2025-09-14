@@ -12,12 +12,14 @@ const program = new Command();
 program
   .name('semsearch')
   .description('🔍 Standalone semantic search CLI with Azure OpenAI integration')
-  .version('0.1.0')
+  .version('0.2.0')
   .addHelpText('after', `
 Examples:
   $ semsearch init                              # Setup wizard (first time)
   $ semsearch index ./documents                 # Index files for search
   $ semsearch search "machine learning"         # Search indexed content
+  $ semsearch search "ML" --min-similarity 0.5  # Filter by vector similarity
+  $ semsearch search "AI" --min-score 80        # Filter by final relevance score
   $ semsearch info <file-id>                    # Get file details
   $ semsearch test-connection                   # Test Azure OpenAI connection
 
@@ -123,8 +125,24 @@ program
         const { SqliteStore } = await import('./sqlite');
         const db = new SqliteStore(dbPath);
         const count = db.count();
+        const vectorCount = db.vectorCount();
+        const hasVectorIndex = db.hasVectorIndex();
         db.close();
         console.log(`  Documents: ${chalk.green(count.toString())}`);
+        
+        // Vector search status
+        if (hasVectorIndex) {
+          const percentage = count > 0 ? Math.round((vectorCount / count) * 100) : 0;
+          console.log(`  Vector Index: ${chalk.green('✓')} ${chalk.gray(`(${vectorCount}/${count} documents, ${percentage}%)`)}`);
+          if (vectorCount < count) {
+            console.log(`    ${chalk.yellow('Note:')} Some documents missing from vector index - run "semsearch index --force" to rebuild`);
+          }
+        } else {
+          console.log(`  Vector Index: ${chalk.yellow('⚠')} ${chalk.gray('Not available - using brute-force search')}`);
+          if (count > 0) {
+            console.log(`    ${chalk.yellow('Note:')} Run "semsearch index --force" to enable fast vector search`);
+          }
+        }
       } catch (error: any) {
         console.log(`  Documents: ${chalk.red(`Unable to read (${error.message})`)}`);
       }
@@ -225,17 +243,53 @@ program
   .argument('<query>')
   .option('--db <path>', 'SQLite path')
   .option('--topK <n>', 'Top K results', (v: string) => parseInt(v, 10), DEFAULT_CONFIG.DEFAULT_TOP_K)
-  .action(async (query: string, opts: { db?: string; topK: number }, command: any) => {
+  .option('--min-similarity <n>', 'Minimum cosine similarity threshold (0.0-1.0, filters vector matches)', (v: string) => parseFloat(v), DEFAULT_CONFIG.DEFAULT_MIN_SIMILARITY)
+  .option('--min-score <n>', 'Minimum final score threshold (0-100, filters reranked results)', (v: string) => parseFloat(v), DEFAULT_CONFIG.DEFAULT_MIN_SCORE)
+  .action(async (query: string, opts: { db?: string; topK: number; minSimilarity: number; minScore: number }, command: any) => {
     const defaults = getConfiguredDefaults();
     const dbPath = opts.db || defaults.defaultDb;
     
-    const store = makeStore(dbPath, DEFAULT_CONFIG.MAX_CHARS_DEFAULT, command.optsWithGlobals());
-    console.log(chalk.blue(`🔍 Searching for: ${chalk.bold(query)}\n`));
+    // Validate min-similarity range
+    if (opts.minSimilarity < 0 || opts.minSimilarity > 1) {
+      console.error(chalk.red('Error: --min-similarity must be between 0.0 and 1.0'));
+      process.exit(1);
+    }
     
-    const results = await store.search(query, { topK: opts.topK });
+    // Validate min-score range
+    if (opts.minScore < 0 || opts.minScore > 100) {
+      console.error(chalk.red('Error: --min-score must be between 0 and 100'));
+      process.exit(1);
+    }
+    
+    const store = makeStore(dbPath, DEFAULT_CONFIG.MAX_CHARS_DEFAULT, command.optsWithGlobals());
+    console.log(chalk.blue(`🔍 Searching for: ${chalk.bold(query)}`));
+    
+    if (opts.minSimilarity !== DEFAULT_CONFIG.DEFAULT_MIN_SIMILARITY) {
+      console.log(chalk.gray(`   Minimum cosine similarity: ${opts.minSimilarity.toFixed(2)}`));
+    }
+    if (opts.minScore !== DEFAULT_CONFIG.DEFAULT_MIN_SCORE) {
+      console.log(chalk.gray(`   Minimum final score: ${opts.minScore.toFixed(0)}`));
+    }
+    console.log();
+    
+    const results = await store.search(query, { topK: opts.topK, minSimilarity: opts.minSimilarity, minScore: opts.minScore });
     
     if (results.length === 0) {
-      console.log(chalk.yellow('No results found. Try a different query or index more documents.'));
+      const customSimilarity = opts.minSimilarity !== DEFAULT_CONFIG.DEFAULT_MIN_SIMILARITY;
+      const customScore = opts.minScore !== DEFAULT_CONFIG.DEFAULT_MIN_SCORE;
+      
+      if (customSimilarity && customScore) {
+        console.log(chalk.yellow(`No results found above similarity threshold ${opts.minSimilarity.toFixed(2)} and score threshold ${opts.minScore}.`));
+        console.log(chalk.gray('Try lowering the --min-similarity or --min-score values, or use a different query.'));
+      } else if (customSimilarity) {
+        console.log(chalk.yellow(`No results found above similarity threshold ${opts.minSimilarity.toFixed(2)}.`));
+        console.log(chalk.gray('Try lowering the --min-similarity value or use a different query.'));
+      } else if (customScore) {
+        console.log(chalk.yellow(`No results found above score threshold ${opts.minScore}.`));
+        console.log(chalk.gray('Try lowering the --min-score value or use a different query.'));
+      } else {
+        console.log(chalk.yellow('No results found. Try a different query or index more documents.'));
+      }
       return;
     }
     
@@ -245,7 +299,15 @@ program
       const r = results[i];
       const scoreColor = r.score >= 80 ? 'green' : r.score >= 60 ? 'yellow' : 'red';
       
-      console.log(`${chalk.cyan(`${i + 1}.`)} ${chalk[scoreColor](r.score.toFixed(1))} ${chalk.bold.white(r.metadata.filename)} ${chalk.gray(`(${r.id.slice(0, 8)}...)`)}`);
+      // Show both scores when either threshold is customized or in verbose mode
+      const showCosineSim = opts.minSimilarity !== DEFAULT_CONFIG.DEFAULT_MIN_SIMILARITY || 
+                           opts.minScore !== DEFAULT_CONFIG.DEFAULT_MIN_SCORE || 
+                           command.optsWithGlobals().verbose;
+      const scoreDisplay = showCosineSim 
+        ? `${chalk[scoreColor](r.score.toFixed(1))} ${chalk.gray(`(cosine: ${r.cosineSimilarity.toFixed(3)})`)}`
+        : chalk[scoreColor](r.score.toFixed(1));
+      
+      console.log(`${chalk.cyan(`${i + 1}.`)} ${scoreDisplay} ${chalk.bold.white(r.metadata.filename)} ${chalk.gray(`(${r.id.slice(0, 8)}...)`)}`);
       console.log(`   ${chalk.blue('Path:')} ${chalk.gray(r.metadata.path)}`);
       
       if (r.metadata.size) {

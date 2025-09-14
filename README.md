@@ -42,7 +42,7 @@ npx semsearch search "machine learning algorithms"
 | `init` | Run setup wizard (first time) |
 | `status` | Show configuration and database status |
 | `index <path>` | Index files for search |
-| `search <query>` | Search indexed content |
+| `search <query>` | Search indexed content (supports `--topK`, `--min-similarity`, `--min-score`) |
 | `info <id>` | Get detailed file information |
 | `test-connection` | Test Azure OpenAI connectivity |
   search "configure X" --topK 5 --db ./index.db
@@ -63,7 +63,7 @@ SEMSEARCH_DEFAULT_DB=./.data/index.db
 ### `.semsearch.json` (Configuration Metadata)
 ```json
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "setupDate": "2025-09-14T08:24:01.945Z",
   "authentication": "api-key",
   "endpoints": {
@@ -117,6 +117,20 @@ Found 5 results:
 2. 15.0 semantic-search.md (a9408b5e...)
    The text discusses semantic search technology, which leverages natural
    language processing and machine learning...
+
+# Search with minimum similarity threshold
+$ npx semsearch search "machine learning" --min-similarity 0.7
+🔍 Searching for: machine learning
+   Minimum cosine similarity: 0.70
+
+Found 2 results:
+
+# Search with minimum final score threshold  
+$ npx semsearch search "database" --min-score 80
+🔍 Searching for: database
+   Minimum final score: 80
+
+Found 1 result:
 ```
 
 ## 🏗️ Architecture

@@ -251,7 +251,7 @@ export class InitWizard {
       
       // Create config data
       const configData: ConfigData = {
-        version: '0.1.0',
+        version: '0.2.0',
         setupDate: new Date().toISOString(),
         authentication: this.config.useAAD ? 'azure-ad' : 'api-key',
         endpoints: {

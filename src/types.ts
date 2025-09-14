@@ -31,7 +31,8 @@ export type StoreConfig = {
 
 export type SearchResult = {
   id: string;
-  score: number; // final score after reranking
+  score: number; // final score after reranking (0-100)
+  cosineSimilarity: number; // original vector similarity (0.0-1.0)
   metadata: FileMetadata;
   summary: string;
 };

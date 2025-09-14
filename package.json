@@ -1,6 +1,6 @@
 {
   "name": "semsearch",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "🔍 AI-powered semantic search library with Azure OpenAI embeddings, intelligent reranking, and local SQLite storage. Find documents by meaning, not just keywords.",
   "main": "dist/index.js",
   "bin": {
@@ -50,6 +50,7 @@
     "mime-types": "^2.1.35",
     "openai": "^4.57.0",
     "ora": "^8.2.0",
+    "sqlite-vec": "^0.1.7-alpha.2",
     "uuid": "^9.0.1"
   },
   "engines": {

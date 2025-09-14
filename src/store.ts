@@ -130,31 +130,45 @@ export class SemanticStore {
     }
   }
 
-  async search(query: string, opts?: { topK?: number }): Promise<SearchResult[]> {
+  async search(query: string, opts?: { topK?: number; minSimilarity?: number; minScore?: number }): Promise<SearchResult[]> {
     const topK = opts?.topK ?? DEFAULT_CONFIG.DEFAULT_TOP_K;
+    const minSimilarity = opts?.minSimilarity ?? DEFAULT_CONFIG.DEFAULT_MIN_SIMILARITY;
+    const minScore = opts?.minScore ?? DEFAULT_CONFIG.DEFAULT_MIN_SCORE;
     const qvec = await embedText(this.azure, query);
     const candidates = this.db.retrieveByEmbedding(qvec.embedding, Math.max(topK * DEFAULT_CONFIG.CANDIDATE_MULTIPLIER, DEFAULT_CONFIG.MIN_CANDIDATES));
+    
+    // Filter candidates by minimum similarity threshold before reranking
+    const filteredCandidates = candidates.filter(c => c.score >= minSimilarity);
+    
+    if (filteredCandidates.length === 0) {
+      return [];
+    }
+    
     const reranked = await rerank(
       this.azure,
       query,
-      candidates.map((c: { rec: FileRecord; score: number }) => ({ id: c.rec.id, summary: c.rec.summary })),
+      filteredCandidates.map((c: { rec: FileRecord; score: number }) => ({ id: c.rec.id, summary: c.rec.summary })),
       topK
     );
     const byId = new Map<string, { rec: FileRecord; score: number }>(
-      candidates.map((c: { rec: FileRecord; score: number }) => [c.rec.id, c])
+      filteredCandidates.map((c: { rec: FileRecord; score: number }) => [c.rec.id, c])
     );
-    return reranked
+    const results = reranked
       .map((r: { id: string; score: number }) => {
         const candidate = byId.get(r.id);
         if (!candidate) return null;
         return { 
           id: r.id, 
           score: r.score, 
+          cosineSimilarity: candidate.score, // Include the original cosine similarity
           metadata: candidate.rec.metadata, 
           summary: candidate.rec.summary 
         } as SearchResult;
       })
       .filter((result): result is SearchResult => result !== null);
+    
+    // Apply minimum score threshold to final results
+    return results.filter(result => result.score >= minScore);
   }
 
   info(id: string): FileRecord | null {
